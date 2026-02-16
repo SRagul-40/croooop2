@@ -1,9 +1,9 @@
 streamlit
 pandas
 numpy
+plotly
 folium
 streamlit-folium
 google-generativeai
-plotly
 scikit-learn
-requests
+Pillow
