@@ -2,189 +2,162 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 import google.generativeai as genai
 import folium
 from streamlit_folium import st_folium
-from datetime import datetime
+from sklearn.linear_model import LinearRegression
+import io
 
 # -----------------------------------------------------------------------------
-# 1. API & SYSTEM CONFIGURATION
+# 1. INITIAL SETUP & MODEL TRAINING
 # -----------------------------------------------------------------------------
-# IMPORTANT: Replace with your actual Gemini API Key
-GEMINI_API_KEY = "YOUR_GEMINI_API_KEY" 
+st.set_page_config(page_title="GeoAgri & Urban Intelligence", layout="wide")
+
+# Mock/Load Data Logic
+@st.cache_data
+def load_and_train_model():
+    # In a real app, you'd load your Excel file here. 
+    # For this demo, I'll create a template based on your provided columns
+    # cy = pd.read_excel("crop_yield_data_sheet.xlsx")
+    
+    # Simulating the dataset structure you provided
+    data = {
+        "Rain Fall (mm)": np.random.randint(400, 1200, 100),
+        "Fertilizer": np.random.randint(50, 200, 100),
+        "Temperatue": np.random.randint(20, 40, 100),
+        "Nitrogen (N)": np.random.randint(10, 100, 100),
+        "Phosphorus (P)": np.random.randint(10, 100, 100),
+        "Potassium (K)": np.random.randint(10, 100, 100),
+        "Yeild (Q/acre)": np.random.randint(10, 50, 100)
+    }
+    df = pd.DataFrame(data)
+    
+    X = df[["Rain Fall (mm)","Fertilizer","Temperatue","Nitrogen (N)","Phosphorus (P)","Potassium (K)"]]
+    y = df["Yeild (Q/acre)"]
+    
+    model = LinearRegression()
+    model.fit(X, y)
+    return model, df
+
+LR_MODEL, RAW_DATA = load_and_train_model()
+
+# Gemini Config
+GEMINI_API_KEY = "YOUR_GEMINI_API_KEY" # Replace with actual key
 genai.configure(api_key=GEMINI_API_KEY)
 ai_model = genai.GenerativeModel('gemini-1.5-flash')
 
-st.set_page_config(page_title="AgriLifecycle AI | Precision ERP & ESG Suite", layout="wide")
-
-# Professional Agri-Tech UI Styling
-st.markdown("""
-    <style>
-    .stApp { background: #040d04; color: #e8f5e9; }
-    .card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid #2e7d32; margin-bottom: 20px; }
-    .status-highlight { border-left: 5px solid #FFD700; background: rgba(255, 215, 0, 0.05); padding: 15px; border-radius: 8px; }
-    </style>
-""", unsafe_allow_html=True)
-
 # -----------------------------------------------------------------------------
-# 2. SIDEBAR: THE 20-PARAMETER SMART ENGINE
+# 2. SIDEBAR - PARAMETER ENGINE
 # -----------------------------------------------------------------------------
-st.sidebar.title("🌿 Farm Control Center")
-st.sidebar.info("Select parameters below to update AI Diagnostics and Graphs.")
+st.sidebar.title("🌍 Land Intelligence System")
 
-# Grouping all 20 Parameters into logical modules
-with st.sidebar.expander("📍 1. Site & Soil Diagnosis", expanded=True):
-    soil_type = st.selectbox("Suitable Soil", ["Alluvial", "Clay", "Black", "Sandy"])
-    soil_test = st.selectbox("Soil Testing Status", ["Verified Excellent", "Pending", "Poor Condition"])
+land_mode = st.sidebar.radio("Select Land Purpose:", ["Agriculture & Seeds", "Urban Construction"])
+
+with st.sidebar.expander("📍 Soil & Environment", expanded=True):
+    soil_type = st.selectbox("Soil Type", ["Alluvial", "Clay", "Black", "Sandy", "Laterite"])
     soil_ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
-    land_slope = st.slider("Land Slope (%)", 0, 40, 5)
+    rainfall = st.number_input("Rainfall (mm)", 0, 3000, 800)
+    temp = st.number_input("Temperature (°C)", 0, 50, 30)
 
-with st.sidebar.expander("🌱 2. Inputs & Planning"):
-    seed_quality = st.selectbox("Quality Seeds", ["Certified Elite", "Standard", "Damaged/Discolored"])
-    manure = st.checkbox("Using Organic Manure")
-    chem_fert = st.checkbox("Using Chemical Fertilizers")
-    fert_plan = st.text_area("Fertilizer Application Plan", "NPK 20-20-10 Cycle")
-
-with st.sidebar.expander("⚙️ 3. Operations & Resources"):
-    water_src = st.selectbox("Water Source", ["Borewell", "Canal", "Rainwater"])
-    irrigation = st.selectbox("Irrigation System", ["Drip (Efficient)", "Sprinkler", "Surface Flood"])
-    labor = st.number_input("Labor Count", 1, 100, 10)
-    tools = st.multiselect("Farming Tools", ["Tractor", "Seeder", "Harvester", "Power Tiller"], ["Tractor"])
-
-with st.sidebar.expander("🛡️ 4. Protection & Weather"):
-    climate = st.selectbox("Climate Conditions", ["Optimal", "Dry/Heatwave", "Heavy Rain"])
-    pest = st.checkbox("Pest Activity Observed")
-    disease = st.checkbox("Disease Symptoms Observed")
-    weed_ctrl = st.selectbox("Weed Control Method", ["Manual", "Chemical", "Mulching"])
-    monitoring = st.selectbox("Field Monitoring", ["Manual Walk", "Drone Mapping", "IoT Sensors"])
-
-with st.sidebar.expander("📈 5. Post-Harvest & Records"):
-    harv_tools = st.selectbox("Harvesting Tools", ["Mechanical", "Manual"])
-    storage = st.selectbox("Storage Facilities", ["Cold Storage", "Dry Silo", "Warehouse"])
-    transport = st.selectbox("Transportation", ["Freight Truck", "Local Market Cart"])
-    record_keeping = st.toggle("Enable Yield Record Keeping", value=True)
+if land_mode == "Agriculture & Seeds":
+    with st.sidebar.expander("🧪 Fertilizer (NPK) Levels"):
+        nitro = st.number_input("Nitrogen (N)", 0, 200, 50)
+        phos = st.number_input("Phosphorus (P)", 0, 200, 50)
+        potas = st.number_input("Potassium (K)", 0, 200, 50)
+        fert = st.number_input("Total Fertilizer Used", 0, 1000, 150)
+else:
+    with st.sidebar.expander("🏗️ Structural Params"):
+        foundation_depth = st.slider("Planned Foundation Depth (m)", 1, 20, 5)
+        load_req = st.selectbox("Building Type", ["Residential", "Commercial", "Industrial"])
 
 # -----------------------------------------------------------------------------
-# 3. MAIN INTERFACE: MAP & AI CHATBOT
+# 3. MAP INTERFACE
 # -----------------------------------------------------------------------------
-st.title("🛰️ Satellite Land Intelligence & GenAI Diagnostics")
+st.title("🛰️ Geo-Spatial Land Analysis")
 
-col_map, col_ai = st.columns([2, 1])
+col_map, col_info = st.columns([2, 1])
 
 with col_map:
-    st.subheader("Interactive Land Selection")
-    # Professional Satellite View (Google Hybrid Style)
-    m = folium.Map(location=[13.0827, 80.2707], zoom_start=16)
+    st.subheader("Select Coordinates")
+    m = folium.Map(location=[20.5937, 78.9629], zoom_start=5) # Default India
     google_satellite = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
     folium.TileLayer(tiles=google_satellite, attr='Google Satellite', name='Google Satellite').add_to(m)
     
-    map_data = st_folium(m, width=800, height=450)
-    clicked = map_data.get("last_clicked") if map_data else None
+    map_data = st_folium(m, width=800, height=400)
+    clicked = map_data.get("last_clicked")
 
-    if clicked:
-        # Green Circle highlight for Agricultural Land
-        folium.Circle(location=[clicked['lat'], clicked['lng']], radius=80, 
-                      color="#2e7d32", fill=True, fill_color="#2e7d32").add_to(m)
-        st.success(f"📍 Land Coordinate Locked: {clicked['lat']:.4f}, {clicked['lng']:.4f}")
-
-with col_ai:
-    st.subheader("🤖 AI Diagnostic Expert")
-    if clicked:
-        user_query = st.text_input("Ask AI about seeds, pests, or soil:")
-        if st.button("Get AI Solution"):
-            # Context Injection: Passing the 20 parameters to the AI
-            context = f"""
-            Farmer Context: Soil PH {soil_ph}, Seed Quality: {seed_quality}, 
-            Pests: {pest}, Disease: {disease}, Weather: {climate}.
-            Specific User Problem: {user_query}
-            
-            Task: Provide a professional solution. If seeds are 'Damaged', explain the risk.
-            """
-            with st.spinner("Analyzing farm data..."):
-                response = ai_model.generate_content(context)
-                st.markdown(f"<div class='status-highlight'>{response.text}</div>", unsafe_allow_html=True)
-    else:
-        st.warning("Please click on the map to select a farm field.")
-
-# -----------------------------------------------------------------------------
-# 4. PREDICTIVE ANALYTICS & HISTORICAL GRAPHS
-# -----------------------------------------------------------------------------
 if clicked:
-    st.divider()
-    st.header("📊 Yield Prediction & Comparative Analytics")
+    lat, lng = clicked['lat'], clicked['lng']
+    st.success(f"Selected Location: Lat {lat:.4f}, Lng {lng:.4f}")
 
-    # Math Logic for current yield based on 20 parameters
-    current_yield = 14.5
-    if soil_test == "Verified Excellent": current_yield += 3.0
-    if irrigation == "Drip (Efficient)": current_yield += 2.5
-    if seed_quality == "Damaged/Discolored": current_yield -= 7.0
-    if pest or disease: current_yield -= 4.5
-
-    col_g1, col_g2 = st.columns(2)
-
-    with col_g1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.subheader("📅 Year-on-Year Comparison")
-        # Comparing last 4 years with Current Prediction
-        years = ['2022', '2023', '2024', '2025 (Predicted)']
-        yield_data = [12.8, 15.2, 14.1, current_yield]
+    # -------------------------------------------------------------------------
+    # 4. LOGIC ENGINE
+    # -------------------------------------------------------------------------
+    if land_mode == "Agriculture & Seeds":
+        # Predict Yield using the ML Model
+        input_data = np.array([[rainfall, fert, temp, nitro, phos, potas]])
+        predicted_yield = LR_MODEL.predict(input_data)[0]
         
-        fig1 = px.line(x=years, y=yield_data, markers=True, title="Historical vs. Current Yield (Q/acre)")
-        fig1.update_traces(line_color='#2e7d32', line_width=4)
-        fig1.add_trace(go.Scatter(x=[years[-1]], y=[yield_data[-1]], mode='markers', 
-                                 marker=dict(size=15, color='Gold'), name='Target Prediction'))
-        st.plotly_chart(fig1, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col_g2:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.subheader("📈 Input vs Output Response")
-        # Sensitivity analysis: How yield responds to Input Intensity
-        input_levels = np.linspace(0, 100, 10)
-        output_response = [current_yield * (1 + (x/250)) for x in input_levels]
+        # Financial Logic
+        market_rate_per_q = 2500 # Avg price in INR
+        net_profit = predicted_yield * market_rate_per_q
         
-        fig2 = px.area(x=input_levels, y=output_response, title="Predicted Yield Growth by Input Level")
-        fig2.update_traces(fillcolor='rgba(46, 125, 50, 0.3)', line_color='#2e7d32')
-        st.plotly_chart(fig2, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.divider()
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Predicted Yield", f"{predicted_yield:.2/acre}")
+        c2.metric("Est. Market Value", f"₹{net_profit:,.2f}")
+        c3.metric("Soil Health Index", f"{10 - abs(6.5-soil_ph):.1f}/10")
+
+        # AI Recommendations for Seeds & Profit
+        st.subheader("🌱 AI Seed & Crop Strategy")
+        if st.button("Generate Profit Analysis"):
+            prompt = f"""
+            Location: Lat {lat}, Lng {lng}. Soil: {soil_type}, pH: {soil_ph}. 
+            Temp: {temp}C, Rainfall: {rainfall}mm.
+            Task: 
+            1. Suggest the top 3 most profitable crops for this specific Indian coordinate.
+            2. List seed varieties available in surrounding areas.
+            3. Estimate the 'Net Worth' potential per acre in Indian Rupees (INR).
+            4. Suggest companion crops for surrounding lands.
+            """
+            with st.spinner("Analyzing regional market data..."):
+                response = ai_model.generate_content(prompt)
+                st.info(response.text)
+
+    else:
+        # URBAN CONSTRUCTION LOGIC
+        st.divider()
+        st.subheader("🏗️ Structural Suitability Analysis")
+        
+        # Basic Structural Logic
+        max_floors = 0
+        if soil_type == "Black": max_floors = 2  # Poor bearing capacity
+        elif soil_type == "Clay": max_floors = 4
+        elif soil_type == "Alluvial": max_floors = 10
+        else: max_floors = 15 # Sandy/Rock/Laterite
+        
+        if soil_ph < 5.0: # Acidic soil corrodes foundation
+            max_floors -= 1
+            
+        st.warning(f"Based on soil conditions, the suggested safe limit is {max_floors} floors.")
+        
+        if st.button("Get Engineering AI Report"):
+            prompt = f"""
+            Location: Lat {lat}, Lng {lng}. Soil Type: {soil_type}, pH: {soil_ph}.
+            The user wants to build a {load_req} building. 
+            Analyze the soil stability for this specific region. 
+            Suggest foundation types and confirm if {max_floors} floors is feasible.
+            """
+            response = ai_model.generate_content(prompt)
+            st.write(response.text)
 
 # -----------------------------------------------------------------------------
-# 5. ESG & SUSTAINABILITY (Idea 3)
+# 5. DATA VISUALIZATION
 # -----------------------------------------------------------------------------
-    st.divider()
-    st.header("🌍 Sustainability & ESG Reporting")
-    
-    col_e1, col_e2 = st.columns([1, 2])
-    
-    with col_e1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        # Score Logic
-        esg_score = 60
-        if manure: esg_score += 20
-        if irrigation == "Drip (Efficient)": esg_score += 20
-        if chem_fert: esg_score -= 15
-        
-        st.metric("ESG Sustainability Score", f"{esg_score}/100", delta=f"{esg_score-60} pts")
-        
-        # ESG Polar Chart
-        categories = ['Environment', 'Social', 'Governance']
-        values = [esg_score, 85, 90]
-        fig_esg = px.line_polar(r=values, theta=categories, line_close=True)
-        fig_esg.update_traces(fill='toself', fillcolor='rgba(46, 125, 50, 0.5)', line_color='#2e7d32')
-        st.plotly_chart(fig_esg, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+st.divider()
+st.subheader("📈 Regional Historical Trends")
+fig = px.scatter(RAW_DATA, x="Rain Fall (mm)", y="Yeild (Q/acre)", 
+                 trendline="ols", title="Rainfall vs Yield Impact")
+st.plotly_chart(fig, use_container_width=True)
 
-    with col_e2:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.subheader("📜 Corporate ESG Audit")
-        if st.button("Generate Sustainability Memo"):
-            esg_context = f"Manure: {manure}, Chem: {chem_fert}, Irrigation: {irrigation}, Soil: {soil_test}"
-            report = ai_model.generate_content(f"Generate a corporate ESG memo for this farm data: {esg_context}")
-            st.info(report.text)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# -----------------------------------------------------------------------------
-# 6. FOOTER
-# -----------------------------------------------------------------------------
-st.markdown("<center><br>AgriLifecycle Pro | Enterprise Decision Support System v3.0</center>", unsafe_allow_html=True)
+st.markdown("<center>Agri-Urban Intelligence Suite | v4.0</center>", unsafe_allow_html=True)
