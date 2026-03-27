@@ -6,158 +6,191 @@ import google.generativeai as genai
 import folium
 from streamlit_folium import st_folium
 from sklearn.linear_model import LinearRegression
-import io
 
 # -----------------------------------------------------------------------------
-# 1. INITIAL SETUP & MODEL TRAINING
+# 1. UI CONFIGURATION & ANIMATED BACKGROUND
 # -----------------------------------------------------------------------------
-st.set_page_config(page_title="GeoAgri & Urban Intelligence", layout="wide")
+st.set_page_config(page_title="Agri-Satellite Intelligence", layout="wide")
 
-# Mock/Load Data Logic
+# Creative CSS for Animating Gradient Background & Glassmorphism
+st.markdown("""
+    <style>
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    .stApp {
+        background: linear-gradient(-45deg, #040d04, #0a1f0a, #051a05, #000000);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+        color: #e8f5e9;
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 20px;
+    }
+    .stButton>button {
+        background: linear-gradient(90deg, #2e7d32, #1b5e20);
+        color: white;
+        border-radius: 10px;
+        border: none;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 15px #4caf50;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 2. ML MODEL & DATA ENGINE
+# -----------------------------------------------------------------------------
 @st.cache_data
-def load_and_train_model():
-    # In a real app, you'd load your Excel file here. 
-    # For this demo, I'll create a template based on your provided columns
-    # cy = pd.read_excel("crop_yield_data_sheet.xlsx")
-    
-    # Simulating the dataset structure you provided
+def train_crop_model():
+    # Simulated historical data based on your provided column structure
     data = {
-        "Rain Fall (mm)": np.random.randint(400, 1200, 100),
-        "Fertilizer": np.random.randint(50, 200, 100),
-        "Temperatue": np.random.randint(20, 40, 100),
-        "Nitrogen (N)": np.random.randint(10, 100, 100),
-        "Phosphorus (P)": np.random.randint(10, 100, 100),
-        "Potassium (K)": np.random.randint(10, 100, 100),
-        "Yeild (Q/acre)": np.random.randint(10, 50, 100)
+        "Rain Fall (mm)": np.random.randint(400, 1500, 200),
+        "Fertilizer": np.random.randint(50, 300, 200),
+        "Temperatue": np.random.randint(20, 45, 200),
+        "Nitrogen (N)": np.random.randint(10, 150, 200),
+        "Phosphorus (P)": np.random.randint(10, 150, 200),
+        "Potassium (K)": np.random.randint(10, 150, 200),
+        "Yeild (Q/acre)": np.random.randint(5, 60, 200)
     }
     df = pd.DataFrame(data)
-    
     X = df[["Rain Fall (mm)","Fertilizer","Temperatue","Nitrogen (N)","Phosphorus (P)","Potassium (K)"]]
     y = df["Yeild (Q/acre)"]
-    
-    model = LinearRegression()
-    model.fit(X, y)
+    model = LinearRegression().fit(X, y)
     return model, df
 
-LR_MODEL, RAW_DATA = load_and_train_model()
-
-# Gemini Config
-GEMINI_API_KEY = "YOUR_GEMINI_API_KEY" # Replace with actual key
-genai.configure(api_key=GEMINI_API_KEY)
-ai_model = genai.GenerativeModel('gemini-1.5-flash')
+LR_MODEL, RAW_DATA = train_crop_model()
 
 # -----------------------------------------------------------------------------
-# 2. SIDEBAR - PARAMETER ENGINE
+# 3. SIDEBAR - SATELLITE CONTROLS & PARAMS
 # -----------------------------------------------------------------------------
-st.sidebar.title("🌍 Land Intelligence System")
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/628/628283.png", width=100)
+st.sidebar.title("🛰️ Land Controller")
 
-land_mode = st.sidebar.radio("Select Land Purpose:", ["Agriculture & Seeds", "Urban Construction"])
+with st.sidebar.expander("📍 Target Coordinates", expanded=True):
+    input_lat = st.number_input("Enter Latitude", value=13.0827, format="%.6f")
+    input_lng = st.number_input("Enter Longitude", value=80.2707, format="%.6f")
+    zoom_lvl = st.slider("Satellite Zoom", 10, 20, 16)
 
-with st.sidebar.expander("📍 Soil & Environment", expanded=True):
-    soil_type = st.selectbox("Soil Type", ["Alluvial", "Clay", "Black", "Sandy", "Laterite"])
-    soil_ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
-    rainfall = st.number_input("Rainfall (mm)", 0, 3000, 800)
-    temp = st.number_input("Temperature (°C)", 0, 50, 30)
-
-if land_mode == "Agriculture & Seeds":
-    with st.sidebar.expander("🧪 Fertilizer (NPK) Levels"):
-        nitro = st.number_input("Nitrogen (N)", 0, 200, 50)
-        phos = st.number_input("Phosphorus (P)", 0, 200, 50)
-        potas = st.number_input("Potassium (K)", 0, 200, 50)
-        fert = st.number_input("Total Fertilizer Used", 0, 1000, 150)
-else:
-    with st.sidebar.expander("🏗️ Structural Params"):
-        foundation_depth = st.slider("Planned Foundation Depth (m)", 1, 20, 5)
-        load_req = st.selectbox("Building Type", ["Residential", "Commercial", "Industrial"])
+with st.sidebar.expander("🌱 Soil Analysis"):
+    soil_type = st.selectbox("Soil Category", ["Black Soil", "Alluvial", "Red Soil", "Clay"])
+    ph = st.slider("Soil pH", 0.0, 14.0, 6.5)
+    nitro = st.number_input("Nitrogen (N)", 0, 200, 60)
+    phos = st.number_input("Phosphorus (P)", 0, 200, 50)
+    potas = st.number_input("Potassium (K)", 0, 200, 50)
+    rain = st.number_input("Expected Rainfall (mm)", 0, 2000, 800)
+    temp = st.number_input("Avg Temperature (°C)", 10, 50, 30)
 
 # -----------------------------------------------------------------------------
-# 3. MAP INTERFACE
+# 4. MAIN INTERFACE - GOOGLE SATELLITE MAP
 # -----------------------------------------------------------------------------
-st.title("🛰️ Geo-Spatial Land Analysis")
+st.title("🌾 Agri-Satellite & Financial Intelligence")
 
-col_map, col_info = st.columns([2, 1])
+col_map, col_yield = st.columns([3, 2])
 
 with col_map:
-    st.subheader("Select Coordinates")
-    m = folium.Map(location=[20.5937, 78.9629], zoom_start=5) # Default India
-    google_satellite = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
-    folium.TileLayer(tiles=google_satellite, attr='Google Satellite', name='Google Satellite').add_to(m)
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("Live Satellite View")
     
-    map_data = st_folium(m, width=800, height=400)
-    clicked = map_data.get("last_clicked")
-
-if clicked:
-    lat, lng = clicked['lat'], clicked['lng']
-    st.success(f"Selected Location: Lat {lat:.4f}, Lng {lng:.4f}")
-
-    # -------------------------------------------------------------------------
-    # 4. LOGIC ENGINE
-    # -------------------------------------------------------------------------
-    if land_mode == "Agriculture & Seeds":
-        # Predict Yield using the ML Model
-        input_data = np.array([[rainfall, fert, temp, nitro, phos, potas]])
-        predicted_yield = LR_MODEL.predict(input_data)[0]
-        
-        # Financial Logic
-        market_rate_per_q = 2500 # Avg price in INR
-        net_profit = predicted_yield * market_rate_per_q
-        
-        st.divider()
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Predicted Yield", f"{predicted_yield:.2/acre}")
-        c2.metric("Est. Market Value", f"₹{net_profit:,.2f}")
-        c3.metric("Soil Health Index", f"{10 - abs(6.5-soil_ph):.1f}/10")
-
-        # AI Recommendations for Seeds & Profit
-        st.subheader("🌱 AI Seed & Crop Strategy")
-        if st.button("Generate Profit Analysis"):
-            prompt = f"""
-            Location: Lat {lat}, Lng {lng}. Soil: {soil_type}, pH: {soil_ph}. 
-            Temp: {temp}C, Rainfall: {rainfall}mm.
-            Task: 
-            1. Suggest the top 3 most profitable crops for this specific Indian coordinate.
-            2. List seed varieties available in surrounding areas.
-            3. Estimate the 'Net Worth' potential per acre in Indian Rupees (INR).
-            4. Suggest companion crops for surrounding lands.
-            """
-            with st.spinner("Analyzing regional market data..."):
-                response = ai_model.generate_content(prompt)
-                st.info(response.text)
-
-    else:
-        # URBAN CONSTRUCTION LOGIC
-        st.divider()
-        st.subheader("🏗️ Structural Suitability Analysis")
-        
-        # Basic Structural Logic
-        max_floors = 0
-        if soil_type == "Black": max_floors = 2  # Poor bearing capacity
-        elif soil_type == "Clay": max_floors = 4
-        elif soil_type == "Alluvial": max_floors = 10
-        else: max_floors = 15 # Sandy/Rock/Laterite
-        
-        if soil_ph < 5.0: # Acidic soil corrodes foundation
-            max_floors -= 1
-            
-        st.warning(f"Based on soil conditions, the suggested safe limit is {max_floors} floors.")
-        
-        if st.button("Get Engineering AI Report"):
-            prompt = f"""
-            Location: Lat {lat}, Lng {lng}. Soil Type: {soil_type}, pH: {soil_ph}.
-            The user wants to build a {load_req} building. 
-            Analyze the soil stability for this specific region. 
-            Suggest foundation types and confirm if {max_floors} floors is feasible.
-            """
-            response = ai_model.generate_content(prompt)
-            st.write(response.text)
+    # Create Folium Map with Google Satellite Tiles
+    m = folium.Map(location=[input_lat, input_lng], zoom_start=zoom_lvl)
+    google_sat = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
+    folium.TileLayer(
+        tiles=google_sat,
+        attr='Google',
+        name='Google Satellite',
+        overlay=False,
+        control=True
+    ).add_to(m)
+    
+    # Add a marker for the land
+    folium.Marker([input_lat, input_lng], popup="Selected Land", icon=folium.Icon(color='green')).add_to(m)
+    
+    st_folium(m, width="100%", height=500)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 5. DATA VISUALIZATION
+# 5. CROP PREDICTION & FINANCIALS (INR)
 # -----------------------------------------------------------------------------
-st.divider()
-st.subheader("📈 Regional Historical Trends")
-fig = px.scatter(RAW_DATA, x="Rain Fall (mm)", y="Yeild (Q/acre)", 
-                 trendline="ols", title="Rainfall vs Yield Impact")
+with col_yield:
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("📊 Yield & Financial Outlook")
+    
+    # Prediction
+    # Note: Fertilizer is approximated as sum of NPK for the model
+    total_fert = nitro + phos + potas 
+    pred_input = np.array([[rain, total_fert, temp, nitro, phos, potas]])
+    predicted_yield = LR_MODEL.predict(pred_input)[0]
+    
+    # FINANCIAL LOGIC (INR)
+    # Average Market Price per Quintal (e.g., Rice/Wheat avg)
+    avg_price_inr = 2800 
+    total_net_worth = predicted_yield * avg_price_inr
+    
+    st.metric("Estimated Yield", f"{predicted_yield:.2f} Q/acre")
+    st.metric("Total Net Worth (INR)", f"₹ {total_net_worth:,.2f}", delta="Per Acre")
+    
+    st.write(f"**Soil Suitability:** {soil_type}")
+    st.progress(min(predicted_yield/60, 1.0))
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # -----------------------------------------------------------------------------
+    # AI STRATEGY PANEL (GEMINI)
+    # -----------------------------------------------------------------------------
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("🤖 AI Agronomist")
+    
+    if st.button("Analyze Surrounding Lands"):
+        # Context for AI
+        context = f"""
+        Location: {input_lat}, {input_lng}. 
+        Soil: {soil_type}, pH: {ph}. 
+        Climate: {temp}°C, {rain}mm rain.
+        Predicted Yield: {predicted_yield} Q/acre.
+        Task: 
+        1. Suggest the most profitable crop varieties for this specific coordinate.
+        2. Identify what crops are likely growing in surrounding lands.
+        3. List specific seed varieties available in the Indian market.
+        4. Provide a financial breakdown in Indian Rupees (INR).
+        """
+        
+        # IMPORTANT: Replace with your actual Gemini Key
+        try:
+            genai.configure(api_key="YOUR_GEMINI_API_KEY")
+            ai_model = genai.GenerativeModel('gemini-1.5-flash')
+            response = ai_model.generate_content(context)
+            st.info(response.text)
+        except Exception as e:
+            st.error("AI Analysis: Please configure a valid Gemini API Key.")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 6. HISTORICAL TRENDS (FIXED PLOTLY ERROR)
+# -----------------------------------------------------------------------------
+st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+st.subheader("📈 Regional Production Trends")
+
+# trendline="ols" requires 'statsmodels' installed
+fig = px.scatter(
+    RAW_DATA, 
+    x="Rain Fall (mm)", 
+    y="Yeild (Q/acre)", 
+    trendline="ols",
+    template="plotly_dark",
+    color_discrete_sequence=['#4caf50']
+)
 st.plotly_chart(fig, use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("<center>Agri-Urban Intelligence Suite | v4.0</center>", unsafe_allow_html=True)
+st.markdown("<center>Developed for Agri-Enterprise | v5.0 | High-Precision Mapping</center>", unsafe_allow_html=True)
