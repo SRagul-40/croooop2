@@ -1,10 +1,10 @@
 streamlit
 pandas
 numpy
-plotly
 folium
 streamlit-folium
-google-generativeai
+plotly
+geopy
 scikit-learn
 statsmodels
-geopy
+google-generativeai
