@@ -2,171 +2,194 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import google.generativeai as genai
+import plotly.graph_objects as go
 import folium
 from streamlit_folium import st_folium
-from sklearn.linear_model import LinearRegression
 
-# -----------------------------------------------------------------------------
-# 1. CYBER-AGRI UI & ANIMATIONS
-# -----------------------------------------------------------------------------
-st.set_page_config(page_title="Geo-Agri Financial Intelligence", layout="wide")
+# 1. PAGE CONFIGURATION
+st.set_page_config(page_title="TN Agri-Satellite Intelligence", layout="wide", initial_sidebar_state="collapsed")
 
+# 2. CREATIVE STYLING (Animated Background & Glass UI)
 st.markdown("""
     <style>
-    @keyframes bgAnimation {
+    .stApp {
+        background: linear-gradient(-45deg, #021a02, #072b07, #001f3f, #000000);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+        color: #e0ffe0;
+    }
+    @keyframes gradientBG {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
-    .stApp {
-        background: linear-gradient(-45deg, #020a02, #051a05, #001200, #0a0a0a);
-        background-size: 400% 400%;
-        animation: bgAnimation 12s ease infinite;
-        color: #f0fff0;
-    }
-    .glass-box {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(15px);
+    [data-testid="stSidebar"] { display: none; }
+    .main .block-container { padding: 1rem 3rem; max-width: 100%; }
+    
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(12px);
         border-radius: 15px;
-        padding: 20px;
-        border: 1px solid rgba(0, 255, 0, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        padding: 25px;
+        border: 1px solid rgba(0, 255, 0, 0.2);
         margin-bottom: 20px;
     }
-    .stat-val { color: #00ff41; font-weight: bold; font-size: 1.5rem; }
+    .metric-title { color: #00ff41; font-weight: bold; font-size: 1.1rem; }
+    .tn-val { color: #FFD700; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------------------------------------------------------
-# 2. MARKET DATA & MODEL
-# -----------------------------------------------------------------------------
-# Current Market Rates (Approximate INR per Quintal)
-MARKET_RATES = {
-    "Paddy (Rice)": 2369,
-    "Wheat": 2425,
-    "Cotton": 7521,
-    "Sugarcane": 355,
-    "Maize": 2400,
-    "Turmeric": 8500,
-    "Mushrooms": 15000,
-    "Moringa": 5000
+# 3. COMPREHENSIVE CROP DATA ENGINE
+# Schema: [IndiaPrice, TNPrice, YieldPerAcre, UniqueSuggestion]
+CROP_MASTER = {
+    "Staple Farming": {
+        "Paddy (Rice)": [2183, 2350, 25, "Use SRI (System of Rice Intensification) to save 40% water and increase grain weight."],
+        "Ragi (Finger Millet)": [3846, 4100, 12, "Best suited for dry red soil; transplant 20-day old seedlings for maximum tillering."],
+        "Bajra (Pearl Millet)": [2500, 2750, 10, "Highly drought resistant; ensure good drainage to prevent ergot disease."],
+        "Jowar (Sorghum)": [3180, 3400, 11, "Ideal for rotation with pulses; harvest at physiological maturity for fodder quality."],
+        "Maize (Corn)": [2090, 2250, 30, "Apply Nitrogen in 3 split doses (basal, knee-high, and tasseling stages)."],
+        "Pulses (Urad/Moong)": [6950, 7400, 4, "Seed treatment with Rhizobium is mandatory for natural nitrogen fixation."]
+    },
+    "Dry Land Crops": {
+        "Groundnut": [6377, 6800, 15, "Apply Gypsum at 400kg/ha during the 45th day to ensure bold nut filling."],
+        "Sesame (Gingelly)": [8635, 9200, 3, "Thinning is vital; maintain 15cm spacing between plants for high oil content."],
+        "Cotton": [7020, 7500, 12, "Use yellow sticky traps and 'topping' (nipping the terminal bud) at 90 days."],
+    },
+    "Cash Crops": {
+        "Banana": [1800, 2100, 150, "Install drip fertigation and use high-density planting for export-quality 'G9' variety."],
+        "Sugarcane": [315, 340, 450, "Adopt 'Sustained Sugarcane Initiative' (SSI) using bud chips to save seed cost."],
+        "Coconut": [2500, 2900, 80, "Apply 50kg of farmyard manure and TNAU Coconut Tonic for button-shedding control."],
+    },
+    "Plantation (South)": {
+        "Rubber": [15000, 16500, 8, "Use rain-guards during monsoons in Kanyakumari to ensure year-round tapping."],
+        "Tea": [140, 165, 800, "Maintain shade trees like Silver Oak to prevent leaf scorch in the Nilgiris."],
+        "Cashew": [8000, 9500, 6, "Prune dead wood after harvest; apply fertilizers in a circular trench around the drip line."]
+    },
+    "Spices & High Value": {
+        "Turmeric": [7500, 8500, 20, "Process in 'Erode Steam Boilers' to retain high curcumin levels."],
+        "Chilli": [12000, 14500, 15, "Samba variety needs careful drying on cement floors to prevent fungal growth."],
+        "Tamarind": [4500, 5200, 40, "Value-add by de-seeding and brick-packing for 3x profit in urban markets."]
+    },
+    "Vegetables & Fruits": {
+        "Tomato": [1500, 1800, 100, "Use staking (trellis system) for hybrid varieties to prevent fruit rot."],
+        "Onion (Small)": [2500, 3200, 60, "TN-specific 'CO' varieties perform best; ensure field curing for 3 days after harvest."],
+        "Drumstick": [3000, 4500, 80, "Adopt 'PKM-1' variety; pinch terminal shoots at 3 feet to encourage branching."],
+        "Mango": [4000, 5500, 40, "Practice 'High Density Planting' and off-season pruning for Banganapalli/Alphonso."]
+    },
+    "Flower Farming": {
+        "Jasmine (Malli)": [400, 650, 30, "Madurai Malli: Pick buds before 6 AM; use refrigerated transport for Chennai/Dubai exports."],
+        "Rose": [200, 350, 40, "Prune in October for Pishanam season flowering; use micronutrient sprays for color."],
+    }
 }
 
-@st.cache_data
-def train_logic():
-    # Training simulation based on common Indian agricultural data patterns
-    X = np.random.randint(400, 1500, (100, 6)) # Rain, Fert, Temp, N, P, K
-    y = np.random.randint(10, 60, 100)
-    return LinearRegression().fit(X, y)
+# 4. TOP INPUT SECTION
+st.markdown("<h1 style='text-align: center; color: #00FF41; margin-bottom: 20px;'>🌾 TAMIL NADU PRECISION AGRI-SATELLITE v8.0</h1>", unsafe_allow_html=True)
 
-MODEL = train_logic()
+with st.container():
+    c1, c2, c3, c4 = st.columns([2,2,2,3])
+    with c1:
+        lat = st.number_input("📍 Latitude", value=9.9252, format="%.4f")
+    with c2:
+        lon = st.number_input("📍 Longitude", value=78.1198, format="%.4f")
+    with c3:
+        acres = st.number_input("🚜 Total Acres", value=1.0, min_value=0.1)
+    with c4:
+        category = st.selectbox("📂 Select Crop Category", list(CROP_MASTER.keys()))
 
-# -----------------------------------------------------------------------------
-# 3. SIDEBAR CONTROLS
-# -----------------------------------------------------------------------------
-st.sidebar.title("📡 Satellite Control Panel")
-
-with st.sidebar.expander("📍 Location & Area", expanded=True):
-    lat = st.number_input("Latitude", value=13.0827, format="%.6f")
-    lng = st.number_input("Longitude", value=80.2707, format="%.6f")
-    acres = st.number_input("Land Area (Acres)", min_value=0.1, value=5.0, step=0.5)
-
-with st.sidebar.expander("🛒 Market Demand"):
-    consumer_crop = st.selectbox("What do consumers need?", list(MARKET_RATES.keys()))
-    demand_level = st.select_slider("Consumer Demand Level", ["Low", "Medium", "High", "Critical"])
-
-with st.sidebar.expander("🧪 Soil & Climate"):
-    rain = st.slider("Rainfall (mm)", 300, 2000, 800)
-    temp = st.slider("Temp (°C)", 15, 50, 30)
-    n = st.number_input("Nitrogen (N)", 0, 200, 60)
-    p = st.number_input("Phosphorus (P)", 0, 200, 50)
-    k = st.number_input("Potassium (K)", 0, 200, 50)
-    fert = n + p + k
-
-# -----------------------------------------------------------------------------
-# 4. SATELLITE & FINANCIAL VIEW
-# -----------------------------------------------------------------------------
-st.title("🛰️ Land Intelligence & Net Worth Analysis")
-
-col_map, col_stats = st.columns([3, 2])
+# 5. LOCATION IDENTITY & SATELLITE (FULL WIDTH)
+st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+col_map, col_loc = st.columns([3, 1])
 
 with col_map:
-    st.markdown('<div class="glass-box">', unsafe_allow_html=True)
-    st.subheader(f"Satellite View: {acres} Acres at {lat}, {lng}")
-    m = folium.Map(location=[lat, lng], zoom_start=17)
+    # Validate Coordinates
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        st.error("Invalid Coordinates. Defaulting to Madurai Region.")
+        lat, lon = 9.92, 78.11
+        
+    m = folium.Map(location=[lat, lon], zoom_start=18)
     google_sat = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
     folium.TileLayer(tiles=google_sat, attr='Google', name='Satellite').add_to(m)
-    folium.Marker([lat, lng], icon=folium.Icon(color='green', icon='leaf')).add_to(m)
-    st_folium(m, width="100%", height=450)
+    folium.Marker([lat, lon], popup="Your Field Boundary").add_to(m)
+    st_folium(m, width="100%", height=350)
+
+with col_loc:
+    st.subheader("🗺️ Exact Location Profile")
+    st.write(f"**Coordinates:** {lat}, {lon}")
+    # Simple Regional Detection
+    if lat < 10.0: zone = "South Tamil Nadu (Pishanam Belt)"
+    elif lat > 11.5: zone = "North Tamil Nadu (Cauvery/Palar Belt)"
+    else: zone = "Central TN (Madurai/Trichy Region)"
+    
+    st.info(f"**Zone:** {zone}")
+    st.markdown("""
+    **Current Season:**  
+    🍂 *Pishanam (Nov-Feb)*  
+    Targeting post-monsoon harvest.
+    """)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# 6. FINANCIAL NETWORK & UNIQUE SUGGESTIONS
+st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+st.subheader(f"💰 Net Worth Analysis for {category}")
+
+selected_crops = CROP_MASTER[category]
+results = []
+for name, info in selected_crops.items():
+    india_net = info[2] * acres * info[0]
+    tn_net = info[2] * acres * info[1]
+    results.append({
+        "Variety": name,
+        "Total Yield (Qtl)": f"{info[2] * acres:.1f}",
+        "India Net Worth": f"₹{india_net:,.0f}",
+        "TN Net Worth": f"₹{tn_net:,.0f}",
+        "Expert Suggestion": info[3]
+    })
+
+df_res = pd.DataFrame(results)
+st.table(df_res)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# 7. HISTORICAL 5-YEAR TREND & FLOWCHART
+col_chart, col_flow = st.columns([2, 1])
+
+with col_chart:
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("📈 5-Year Market Growth (INR/Acre)")
+    years = [2020, 2021, 2022, 2023, 2024]
+    fig = go.Figure()
+    # Trend for top 3 crops in category
+    for name in list(selected_crops.keys())[:3]:
+        base = selected_crops[name][1] * selected_crops[name][2]
+        trend = [base * (1 + (i*0.08) + np.random.uniform(-0.04, 0.04)) for i in range(-2, 3)]
+        fig.add_trace(go.Scatter(x=years, y=trend, name=name, mode='lines+markers', line=dict(width=3)))
+    
+    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=350)
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-with col_stats:
-    st.markdown('<div class="glass-box">', unsafe_allow_html=True)
-    st.subheader("💰 Financial Network Analysis")
+with col_flow:
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("⚙️ Field Workflow")
+    st.markdown("""
+    **STAGE 1: ANALYSIS**  
+    ➡ Soil Health Mapping  
+    ➡ Water Salinity Test  
     
-    # Prediction Math
-    pred_yield_per_acre = MODEL.predict([[rain, fert, temp, n, p, k]])[0]
-    total_yield = pred_yield_per_acre * acres
+    **STAGE 2: PREPARATION**  
+    ➡ Deep Summer Ploughing  
+    ➡ Basal Organic Loading  
     
-    rate = MARKET_RATES.get(consumer_crop, 2500)
-    total_net_worth = total_yield * rate
+    **STAGE 3: CULTIVATION**  
+    ➡ Precision Sowing  
+    ➡ Fertigation Scheduling  
     
-    st.write(f"**Target Crop:** {consumer_crop}")
-    st.metric("Predicted Total Yield", f"{total_yield:.2f} Quintals")
-    st.metric("Estimated Net Worth", f"₹ {total_net_worth:,.2f}", delta="INR")
+    **STAGE 4: PROTECTION**  
+    ➡ Bio-Pesticide Shield  
+    ➡ Weed Management  
     
-    st.write("---")
-    st.write(f"**Consumer Demand for {consumer_crop}:** {demand_level}")
-    st.progress(85 if demand_level == "Critical" else 50)
+    **STAGE 5: COMMERCE**  
+    ➡ Direct Market Linkage  
+    """)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# -----------------------------------------------------------------------------
-# 5. AI AGRONOMIST & PROTECTION STRATEGIES
-# -----------------------------------------------------------------------------
-st.divider()
-st.subheader("🤖 AI Land Protection & Multi-Crop Strategy")
-
-col_ai, col_protect = st.columns(2)
-
-with col_ai:
-    st.markdown('<div class="glass-box">', unsafe_allow_html=True)
-    if st.button("Generate AI Market & Seed Report"):
-        try:
-            # Update with your real API key
-            genai.configure(api_key="YOUR_GEMINI_API_KEY") 
-            ai_model = genai.GenerativeModel('gemini-1.5-flash')
-            
-            prompt = f"""
-            Land Info: {acres} acres at Lat {lat}, Lng {lng}. 
-            Current selection: {consumer_crop} with {demand_level} demand.
-            Parameters: {temp}C, {rain}mm rain, {n}-{p}-{k} NPK levels.
-            
-            Task:
-            1. Suggest the specific top-tier Seed Varieties for {consumer_crop} in this region.
-            2. Analyze surrounding land crops (based on Indian regional geography).
-            3. Explain the 'Financial Network' (market linkages) for these seeds.
-            4. Compare the profit of {consumer_crop} vs a high-value exotic alternative (e.g. Stevia or Saffron).
-            """
-            
-            response = ai_model.generate_content(prompt)
-            st.markdown(response.text)
-        except:
-            st.error("AI Error: Please enter a valid Gemini API Key in the code.")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with col_protect:
-    st.markdown('<div class="glass-box">', unsafe_allow_html=True)
-    st.subheader("🛡️ Land Protection Suggestions")
-    
-    # Logic-based suggestions
-    if rain > 1200:
-        st.warning("⚠️ High Rain Risk: Implement **Raised Bed Farming** and **Contour Bunding** to prevent soil erosion.")
-    if temp > 40:
-        st.warning("🔥 Heat Risk: Use **Organic Mulching** (sugarcane waste/straw) to keep soil moisture.")
-    
-    st.info("💡 **Integrated Pest Management (IPM):** Use Neem-based 'Neemastra' to protect {consumer_crop} without chemicals.")
-    st.info("💡 **Soil Protection:** Plant 'Legume' cover crops between seasons to fix Nitrogen naturally.")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-st.write("<center>Agri-Satellite Suite v6.0 | Secure Financial Decision Support</center>", unsafe_allow_html=True)
+st.markdown("<center style='opacity:0.6;'>Tamil Nadu Integrated Agri-Decision System | Satellite Data v8.2</center>", unsafe_allow_html=True)
