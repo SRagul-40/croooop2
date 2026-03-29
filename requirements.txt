@@ -7,3 +7,4 @@ streamlit-folium
 google-generativeai
 scikit-learn
 statsmodels
+geopy
