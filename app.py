@@ -13,10 +13,10 @@ st.set_page_config(page_title="TN Smart-Agri Spatial v15", layout="wide", initia
 # 2. HIGH-TECH CSS: ANIMATED BACKGROUND & READABILITY
 st.markdown("""
     <style>
-    /* Earthy Brown Agri-Land Background */
+    /* Vibrant Tea Plantation & Sunset Background */
     .stApp {
-        background: linear-gradient(rgba(43, 24, 16, 0.85), rgba(43, 24, 16, 0.85)), 
-                    url('https://images.unsplash.com/photo-1594488654274-16279f64e28c?q=80&w=2070&auto=format&fit=crop');
+        background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                    url('https://as2.ftcdn.net/v2/jpg/05/44/22/16/1000_F_544221648_hY0Bf0UfH1N9XlWfFjB9YpG7n9V6uJzF.jpg');
         background-size: cover;
         background-attachment: fixed;
         background-position: center;
@@ -29,29 +29,38 @@ st.markdown("""
     }
     input[type=number] { -moz-appearance: textfield; }
 
-    /* High-Readability Earthy Glass Containers */
+    /* High-Readability Glass Containers */
     .glass-panel {
-        background: rgba(30, 20, 15, 0.96);
-        border: 2px solid #cd853f; /* Earthy Copper/Brown Border */
+        background: rgba(0, 20, 0, 0.85); /* Deep Forest Green-Black */
+        border: 2px solid #00ff88; /* Vibrant Emerald Border */
         border-radius: 12px;
         padding: 25px;
-        color: #f4e4bc; /* Creamy text for high contrast on brown */
+        color: #ffffff;
         margin-bottom: 20px;
-        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.9);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
     }
     
-    /* Vibrant Golden Accents for important labels */
-    .label-hint { color: #d4a373; font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; }
-    .range-limit { color: #a68966; font-size: 0.75rem; margin-top: -5px; margin-bottom: 10px; }
-    .worth-val { color: #ffcc33; font-size: 1.8rem; font-weight: bold; text-shadow: 1px 1px 2px black; }
-    .dur-val { color: #f4a460; font-weight: bold; }
+    .label-hint { color: #00ff88; font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; }
+    .range-limit { color: #b2ffda; font-size: 0.75rem; margin-top: -5px; margin-bottom: 10px; }
     
-    /* Clean layout settings */
+    /* Vibrant Gold for Net Worth numbers */
+    .worth-val { 
+        color: #ffcc00; 
+        font-size: 1.8rem; 
+        font-weight: bold; 
+        text-shadow: 2px 2px 4px rgba(0,0,0,1);
+    }
+    
+    .dur-val { color: #00ff88; font-weight: bold; }
+    
+    /* Full Page Settings */
     [data-testid="stSidebar"] { display: none; }
     .main .block-container { padding: 1rem 3rem; max-width: 100%; }
     
-    /* Success messages themed to deep green-brown */
-    .stAlert { background-color: rgba(46, 125, 50, 0.3); color: #ffffff; border: 1px solid #cd853f; }
+    /* Custom Scrollbar for better look */
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: #001a00; }
+    ::-webkit-scrollbar-thumb { background: #00ff88; border-radius: 10px; }
     </style>
 """, unsafe_allow_html=True)
 # 3. ADVANCED GEOGRAPHIC & ACREAGE LOGIC
