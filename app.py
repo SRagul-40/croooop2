@@ -12,56 +12,15 @@ st.set_page_config(page_title="TN Smart-Agri Spatial v15", layout="wide", initia
 
 # 2. HIGH-TECH CSS: ANIMATED BACKGROUND & READABILITY
 st.markdown("""
-    <style>
-    /* Exact Smart Farming Field Background */
-    .stApp {
-        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
-                    url('https://www.shutterstock.com/shutterstock/photos/2437538959/display_1500/stock-photo-smart-farming-agriculture-concept-farmers-using-technology-to-monitor-and-manage-their-crops-with-2437538959.jpg');
-        background-size: cover;
-        background-attachment: fixed;
-        background-position: center;
-    }
-
-    /* FORCE KEYBOARD ENTRY: Remove +/- buttons from number boxes */
-    input[type=number]::-webkit-inner-spin-button, 
-    input[type=number]::-webkit-outer-spin-button { 
-        -webkit-appearance: none; margin: 0; 
-    }
-    input[type=number] { -moz-appearance: textfield; }
-
-    /* High-Readability Glass Containers */
-    .glass-panel {
-        background: rgba(10, 30, 10, 0.9); /* Opaque Deep Green-Black */
-        border: 2px solid #00ff88; /* Tech Green Border */
-        border-radius: 12px;
-        padding: 25px;
-        color: #ffffff;
-        margin-bottom: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.9);
-    }
-    
-    .label-hint { color: #00ff88; font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; }
-    .range-limit { color: #b2ffda; font-size: 0.75rem; margin-top: -5px; margin-bottom: 10px; }
-    
-    /* Vibrant Gold for Net Worth numbers to stand out */
-    .worth-val { 
-        color: #ffcc00; 
-        font-size: 1.8rem; 
-        font-weight: bold; 
-        text-shadow: 2px 2px 4px rgba(0,0,0,1);
-    }
-    
-    .dur-val { color: #00ff88; font-weight: bold; }
-    
-    /* Full Page Settings */
-    [data-testid="stSidebar"] { display: none; }
-    .main .block-container { padding: 1rem 3rem; max-width: 100%; }
-    
-    /* Scrollbar Styling */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #051005; }
-    ::-webkit-scrollbar-thumb { background: #00ff88; border-radius: 10px; }
-    </style>
+<style>
+.stApp {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+                url('https://images.unsplash.com/photo-1500382017468-9049fed747ef');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+}
+</style>
 """, unsafe_allow_html=True)
 # 3. ADVANCED GEOGRAPHIC & ACREAGE LOGIC
 @st.cache_data(show_spinner="Analyzing Location...")
