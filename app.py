@@ -13,12 +13,13 @@ st.set_page_config(page_title="TN Smart-Agri Spatial v15", layout="wide", initia
 # 2. HIGH-TECH CSS: ANIMATED BACKGROUND & READABILITY
 st.markdown("""
     <style>
-    /* High-Tech Smart Agriculture Background */
+    /* Earthy Brown Agri-Land Background */
     .stApp {
-        background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), 
-                    url('https://t3.ftcdn.net/jpg/02/75/39/14/360_F_275391431_Z9Z9FjR7P6XyA3b7p4p7p8p9p0p1p2p3.jpg');
+        background: linear-gradient(rgba(43, 24, 16, 0.85), rgba(43, 24, 16, 0.85)), 
+                    url('https://images.unsplash.com/photo-1594488654274-16279f64e28c?q=80&w=2070&auto=format&fit=crop');
         background-size: cover;
         background-attachment: fixed;
+        background-position: center;
     }
 
     /* FORCE KEYBOARD ENTRY: Remove +/- buttons from number boxes */
@@ -28,27 +29,31 @@ st.markdown("""
     }
     input[type=number] { -moz-appearance: textfield; }
 
-    /* High-Readability Glass Containers */
+    /* High-Readability Earthy Glass Containers */
     .glass-panel {
-        background: rgba(10, 25, 10, 0.95);
-        border: 2px solid #00e676;
+        background: rgba(30, 20, 15, 0.96);
+        border: 2px solid #cd853f; /* Earthy Copper/Brown Border */
         border-radius: 12px;
         padding: 25px;
-        color: #ffffff;
+        color: #f4e4bc; /* Creamy text for high contrast on brown */
         margin-bottom: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.9);
     }
     
-    .label-hint { color: #00e676; font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; }
-    .range-limit { color: #81c784; font-size: 0.75rem; margin-top: -5px; margin-bottom: 10px; }
-    .worth-val { color: #00e676; font-size: 1.8rem; font-weight: bold; }
-    .dur-val { color: #ffeb3b; font-weight: bold; }
+    /* Vibrant Golden Accents for important labels */
+    .label-hint { color: #d4a373; font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; }
+    .range-limit { color: #a68966; font-size: 0.75rem; margin-top: -5px; margin-bottom: 10px; }
+    .worth-val { color: #ffcc33; font-size: 1.8rem; font-weight: bold; text-shadow: 1px 1px 2px black; }
+    .dur-val { color: #f4a460; font-weight: bold; }
     
+    /* Clean layout settings */
     [data-testid="stSidebar"] { display: none; }
     .main .block-container { padding: 1rem 3rem; max-width: 100%; }
+    
+    /* Success messages themed to deep green-brown */
+    .stAlert { background-color: rgba(46, 125, 50, 0.3); color: #ffffff; border: 1px solid #cd853f; }
     </style>
 """, unsafe_allow_html=True)
-
 # 3. ADVANCED GEOGRAPHIC & ACREAGE LOGIC
 @st.cache_data(show_spinner="Analyzing Location...")
 def get_location_hierarchy(lat, lon):
