@@ -13,10 +13,10 @@ st.set_page_config(page_title="TN Smart-Agri Spatial v15", layout="wide", initia
 # 2. HIGH-TECH CSS: ANIMATED BACKGROUND & READABILITY
 st.markdown("""
     <style>
-    /* Vibrant Tea Plantation & Sunset Background */
+    /* Exact Smart Farming Field Background */
     .stApp {
-        background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
-                    url('https://as2.ftcdn.net/v2/jpg/05/44/22/16/1000_F_544221648_hY0Bf0UfH1N9XlWfFjB9YpG7n9V6uJzF.jpg');
+        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+                    url('https://www.shutterstock.com/shutterstock/photos/2437538959/display_1500/stock-photo-smart-farming-agriculture-concept-farmers-using-technology-to-monitor-and-manage-their-crops-with-2437538959.jpg');
         background-size: cover;
         background-attachment: fixed;
         background-position: center;
@@ -31,19 +31,19 @@ st.markdown("""
 
     /* High-Readability Glass Containers */
     .glass-panel {
-        background: rgba(0, 20, 0, 0.85); /* Deep Forest Green-Black */
-        border: 2px solid #00ff88; /* Vibrant Emerald Border */
+        background: rgba(10, 30, 10, 0.9); /* Opaque Deep Green-Black */
+        border: 2px solid #00ff88; /* Tech Green Border */
         border-radius: 12px;
         padding: 25px;
         color: #ffffff;
         margin-bottom: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.9);
     }
     
     .label-hint { color: #00ff88; font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; }
     .range-limit { color: #b2ffda; font-size: 0.75rem; margin-top: -5px; margin-bottom: 10px; }
     
-    /* Vibrant Gold for Net Worth numbers */
+    /* Vibrant Gold for Net Worth numbers to stand out */
     .worth-val { 
         color: #ffcc00; 
         font-size: 1.8rem; 
@@ -57,9 +57,9 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none; }
     .main .block-container { padding: 1rem 3rem; max-width: 100%; }
     
-    /* Custom Scrollbar for better look */
-    ::-webkit-scrollbar { width: 10px; }
-    ::-webkit-scrollbar-track { background: #001a00; }
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #051005; }
     ::-webkit-scrollbar-thumb { background: #00ff88; border-radius: 10px; }
     </style>
 """, unsafe_allow_html=True)
